@@ -1,6 +1,9 @@
 # Quantum Notes
 A quantum-secure note-taking application with advanced encryption for protecting your sensitive information.
 
+## Download from here:
+* [here](https://github.com/gks2022004/Q-NOTES/releases/download/v1.0.1/quantum-notes.exe)
+
 ## Features
 
 - **Post-Quantum Security** - Uses Kyber-768 encryption (NIST-approved PQC algorithm) to protect against future quantum computer threats
@@ -98,4 +101,4 @@ GOOS=darwin GOARCH=amd64 go build -o quantum-notes-mac
 GOOS=linux GOARCH=amd64 go build -o quantum-notes-linux
 ```
 
-## Developed by Gaurav Kumar Singh
+## Developed by: Gaurav Kumar Singh
