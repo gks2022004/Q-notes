@@ -28,7 +28,7 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-// Note represents a single encrypted note
+
 type Note struct {
 	ID               int64
 	Title            string
@@ -60,6 +60,29 @@ type AppState struct {
 
 func main() {
 	myApp := app.NewWithID("com.quantumsecure.notes")
+	iconPath := "icon.png"
+	icon, err := fyne.LoadResourceFromPath(iconPath)
+	if err != nil {
+		fmt.Printf("Failed to load icon from %s: %v\n", iconPath, err)
+		
+		// Try to get the executable directory
+		execPath, execErr := os.Executable()
+		if execErr == nil {
+			iconPath = filepath.Join(filepath.Dir(execPath), "icon.png")
+			icon, err = fyne.LoadResourceFromPath(iconPath)
+			if err != nil {
+				fmt.Printf("Failed to load icon from executable dir %s: %v\n", iconPath, err)
+			} else {
+				fmt.Printf("Successfully loaded icon from executable dir: %s\n", iconPath)
+				myApp.SetIcon(icon)
+			}
+		} else {
+			fmt.Printf("Failed to get executable path: %v\n", execErr)
+		}
+	} else {
+		fmt.Printf("Successfully loaded icon from current dir: %s\n", iconPath)
+		myApp.SetIcon(icon)
+	}
 	myWindow := myApp.NewWindow("Quantum Secure Notes")
 	myWindow.Resize(fyne.NewSize(800, 600))
 
