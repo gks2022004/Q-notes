@@ -33,21 +33,20 @@ type Note struct {
 	ID               int64
 	Title            string
 	EncryptedContent []byte
-	Nonce            []byte // AES-GCM nonce
-	FilePath         string // Path to the encrypted file
+	Nonce            []byte 
+	FilePath         string 
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
 
-// CryptoManager handles encryption/decryption operations
+
 type CryptoManager struct {
 	privateKey kem.PrivateKey
 	publicKey  kem.PublicKey
-	sessionKey []byte    // AES symmetric key derived from password hash
+	sessionKey []byte    
 	passHash   []byte
 }
 
-// AppState manages the application state
 type AppState struct {
 	db           *sql.DB
 	notes        []Note
@@ -55,38 +54,66 @@ type AppState struct {
 	currentNote  *Note
 	authenticated bool
 	userID        int64
-	dataDir       string // Directory for storing encrypted note files
+	dataDir       string
 }
 
+func showAboutDialog(win fyne.Window) {
+	aboutContent := container.NewVBox(
+		widget.NewLabel("Quantum Notes"),
+		widget.NewLabel("Version 1.0.1"),
+		widget.NewLabel(""),
+		widget.NewLabel("Developed by Gaurav Kumar🚀"),
+		widget.NewLabel("© 2025 All Rights Reserved"),
+	)
+
+	
+	for _, obj := range aboutContent.Objects {
+		if label, ok := obj.(*widget.Label); ok {
+			label.Alignment = fyne.TextAlignCenter
+			label.TextStyle = fyne.TextStyle{Bold: true}
+		}
+	}
+
+	aboutDialog := dialog.NewCustom("About", "Close", aboutContent, win)
+	aboutDialog.Resize(fyne.NewSize(300, 200))
+	aboutDialog.Show()
+}
+
+func setupMainMenu(myWindow fyne.Window) {
+	mainMenu := fyne.NewMainMenu(
+		fyne.NewMenu("About",
+			fyne.NewMenuItem("About Quantum Secure Notes", func() {
+				showAboutDialog(myWindow)
+			}),
+		),
+	)
+
+	myWindow.SetMainMenu(mainMenu)
+}
+
+
 func main() {
-	myApp := app.NewWithID("com.quantumsecure.notes")
+	myApp := app.NewWithID("com.quantum.notes")
 	iconPath := "icon.png"
 	icon, err := fyne.LoadResourceFromPath(iconPath)
 	if err != nil {
-		fmt.Printf("Failed to load icon from %s: %v\n", iconPath, err)
 		
-		// Try to get the executable directory
-		execPath, execErr := os.Executable()
-		if execErr == nil {
+		if execPath, execErr := os.Executable(); execErr == nil {
 			iconPath = filepath.Join(filepath.Dir(execPath), "icon.png")
 			icon, err = fyne.LoadResourceFromPath(iconPath)
-			if err != nil {
-				fmt.Printf("Failed to load icon from executable dir %s: %v\n", iconPath, err)
-			} else {
-				fmt.Printf("Successfully loaded icon from executable dir: %s\n", iconPath)
-				myApp.SetIcon(icon)
-			}
-		} else {
-			fmt.Printf("Failed to get executable path: %v\n", execErr)
 		}
-	} else {
-		fmt.Printf("Successfully loaded icon from current dir: %s\n", iconPath)
+	}
+
+	if err == nil && icon != nil {
 		myApp.SetIcon(icon)
 	}
-	myWindow := myApp.NewWindow("Quantum Secure Notes")
-	myWindow.Resize(fyne.NewSize(800, 600))
 
-	// Create application data directory
+	myWindow := myApp.NewWindow("Quantum Notes")
+	myWindow.Resize(fyne.NewSize(800, 600))
+	
+	setupMainMenu(myWindow)
+
+
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		dialog.ShowError(errors.New("Failed to determine user home directory"), myWindow)
@@ -104,7 +131,7 @@ func main() {
 		dataDir:       dataDir,
 	}
 
-	// Initialize database
+	// Initialize SQLite database
 	db, err := initDB(dataDir)
 	if err != nil {
 		dialog.ShowError(err, myWindow)
@@ -113,7 +140,6 @@ func main() {
 	state.db = db
 	defer db.Close()
 
-	// Display login screen first
 	loginScreen(myWindow, state)
 
 	myWindow.ShowAndRun()
@@ -126,7 +152,6 @@ func initDB(dataDir string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Create tables if they don't exist
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -177,7 +202,6 @@ func loginScreen(w fyne.Window, state *AppState) {
 			return
 		}
 
-		// On successful login, show notes screen
 		notesScreen(w, state)
 	})
 
@@ -200,7 +224,7 @@ func loginScreen(w fyne.Window, state *AppState) {
 	})
 
 	content := container.NewVBox(
-		widget.NewLabel("Quantum Secure Notes"),
+		widget.NewLabel("Quantum Notes"),
 		container.NewPadded(usernameEntry),
 		container.NewPadded(passwordEntry),
 		container.NewHBox(
@@ -215,14 +239,13 @@ func loginScreen(w fyne.Window, state *AppState) {
 }
 
 func notesScreen(w fyne.Window, state *AppState) {
-	// Load notes from database
+	
 	err := loadNotes(state)
 	if err != nil {
 		dialog.ShowError(err, w)
 		return
 	}
 
-	// Create note list
 	notesList := widget.NewList(
 		func() int { return len(state.notes) },
 		func() fyne.CanvasObject { return widget.NewLabel("Note title") },
@@ -231,7 +254,6 @@ func notesScreen(w fyne.Window, state *AppState) {
 		},
 	)
 
-	// Note content
 	titleEntry := widget.NewEntry()
 	titleEntry.SetPlaceHolder("Note Title")
 
@@ -239,14 +261,13 @@ func notesScreen(w fyne.Window, state *AppState) {
 	contentEntry.SetPlaceHolder("Note Content")
 	contentEntry.Wrapping = fyne.TextWrapWord
 
-	// Buttons
 	saveBtn := widget.NewButton("Save", func() {
 		if titleEntry.Text == "" {
 			dialog.ShowInformation("Error", "Title cannot be empty", w)
 			return
 		}
 
-		// If creating a new note, ask where to save it
+
 		if state.currentNote == nil {
 			saveDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
 				if err != nil {
@@ -254,21 +275,18 @@ func notesScreen(w fyne.Window, state *AppState) {
 					return
 				}
 				if writer == nil {
-					return // User cancelled
+					return 
 				}
 				defer writer.Close()
 				
-				// Get the full path
 				filePath := writer.URI().Path()
 				
-				// Encrypt note content
 				encryptedContent, nonce, err := encryptNoteContent(state, contentEntry.Text)
 				if err != nil {
 					dialog.ShowError(err, w)
 					return
 				}
 				
-				// Write encrypted content to the file
 				_, err = writer.Write(encryptedContent)
 				if err != nil {
 					dialog.ShowError(fmt.Errorf("failed to write note file: %w", err), w)
@@ -277,7 +295,6 @@ func notesScreen(w fyne.Window, state *AppState) {
 				
 				now := time.Now().Format(time.RFC3339)
 				
-				// Store a reference in the database
 				result, err := state.db.Exec(`
 					INSERT INTO notes (user_id, title, encrypted_content, nonce, file_path, created_at, updated_at)
 					VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -305,14 +322,12 @@ func notesScreen(w fyne.Window, state *AppState) {
 					UpdatedAt:        time.Now(),
 				})
 				
-				// Reload notes and reset UI
 				notesList.Refresh()
 				state.currentNote = nil
 				titleEntry.SetText("")
 				contentEntry.SetText("")
 			}, w)
 			
-			// Set suggested filename based on title with our extension
 			saveDialog.SetFileName(titleEntry.Text + ".qsnote")
 			saveDialog.SetFilter(storage.NewExtensionFileFilter([]string{".qsnote"}))
 			saveDialog.Show()
@@ -357,7 +372,6 @@ func notesScreen(w fyne.Window, state *AppState) {
 					return
 				}
 
-				// Reload notes
 				err = loadNotes(state)
 				if err != nil {
 					dialog.ShowError(err, w)
@@ -378,14 +392,12 @@ func notesScreen(w fyne.Window, state *AppState) {
 				return
 			}
 			if reader == nil {
-				return // User cancelled
+				return 
 			}
 			defer reader.Close()
 			
-			// Extract filename from URI
 			fileName := filepath.Base(reader.URI().String())
 			
-			// Check if it's our encrypted note file
 			var noteID int64
 			var title string
 			
@@ -399,7 +411,6 @@ func notesScreen(w fyne.Window, state *AppState) {
 				return
 			}
 			
-			// Find the note in our notes array
 			for i, note := range state.notes {
 				if note.ID == noteID {
 					notesList.Select(i)
@@ -408,7 +419,6 @@ func notesScreen(w fyne.Window, state *AppState) {
 			}
 		}, w)
 		
-		// Set filter to only show our note files
 		fd.SetFilter(storage.NewExtensionFileFilter([]string{".qsnote"}))
 		fd.Show()
 	})
@@ -422,12 +432,11 @@ func notesScreen(w fyne.Window, state *AppState) {
 		loginScreen(w, state)
 	})
 
-	// Handle note selection
+	
 	notesList.OnSelected = func(id widget.ListItemID) {
 		state.currentNote = &state.notes[id]
 		titleEntry.SetText(state.currentNote.Title)
 
-		// Decrypt note content
 		content, err := decryptNoteContent(state, state.currentNote)
 		if err != nil {
 			dialog.ShowError(err, w)
@@ -436,7 +445,7 @@ func notesScreen(w fyne.Window, state *AppState) {
 		contentEntry.SetText(content)
 	}
 
-	// Layout
+
 	split := container.NewHSplit(
 		container.NewBorder(nil, nil, nil, nil, notesList),
 		container.NewBorder(
@@ -493,18 +502,15 @@ func createNote(state *AppState, title, content string) error {
 		return errors.New("not authenticated")
 	}
 
-	// Generate unique filename
 	timestamp := time.Now().UnixNano()
 	fileName := fmt.Sprintf("note_%d_%x.qsnote", timestamp, state.userID)
 	filePath := filepath.Join(state.dataDir, fileName)
 
-	// Encrypt note content
 	encryptedContent, nonce, err := encryptNoteContent(state, content)
 	if err != nil {
 		return err
 	}
 
-	// Write encrypted content to file
 	err = os.WriteFile(filePath, encryptedContent, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write note file: %w", err)
@@ -518,18 +524,15 @@ func createNote(state *AppState, title, content string) error {
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, state.userID, title, []byte("STORED_IN_FILE"), nonce, filePath, now, now)
 	if err != nil {
-		// Clean up file if database insert fails
 		os.Remove(filePath)
 		return err
 	}
 
-	// Get the ID of the newly inserted note
 	noteID, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
 
-	// Add note to in-memory collection
 	state.notes = append(state.notes, Note{
 		ID:               noteID,
 		Title:            title,
@@ -548,7 +551,6 @@ func updateNote(state *AppState, noteID int64, title, content string) error {
 		return errors.New("not authenticated")
 	}
 
-	// Find the note
 	var filePath string
 	
 	for _, note := range state.notes {
