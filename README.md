@@ -1,6 +1,10 @@
 # Quantum Notes
 A quantum-secure note-taking application with advanced encryption for protecting your sensitive information.
 
+## Architecture
+![image](https://github.com/user-attachments/assets/aff29d0d-4e04-45ee-8379-f1e7e5c96560)
+
+
 ## Download from here:
 * [here](https://github.com/gks2022004/Q-NOTES/releases/download/v1.0.1/quantum-notes.exe)
 
